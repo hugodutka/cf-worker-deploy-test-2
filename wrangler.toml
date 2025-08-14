@@ -1,7 +1,6 @@
 name = "cf-worker-deploy-test"
 main = "./src/worker.ts"
 compatibility_date = "2025-08-14"
-compatibility_flags = ["durable_object_websocket"]
 
 [observability]
 enabled = true

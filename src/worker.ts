@@ -22,6 +22,15 @@ export default {
   },
 };
 
+const sendMessage = (ws: WebSocket, message: string) => {
+	try {
+		ws.send(JSON.stringify({ version: WebSocketHibernationServer.version, echo: message }));
+	} catch (err) {
+		console.log("Failed to send over WebSocket:", err);
+		try { ws.close(1011, "internal error"); } catch {}
+	}
+}
+
 export class WebSocketHibernationServer extends DurableObject {
   static version: number;
   constructor(ctx: DurableObjectState, env: Env) {
@@ -61,20 +70,24 @@ export class WebSocketHibernationServer extends DurableObject {
     const text = typeof message === "string" ? message : new TextDecoder().decode(message);
     console.log(`DO received message: ${text}`);
 
+		sendMessage(ws, `got message: ${text}`);
+
     // Sleep 30s, logging every 5s
-    const start = Date.now();
     for (let i = 5; i <= 30; i += 5) {
-      await this.sleep(5000);
+			await this.sleep(5000);
+			try {
+				sendMessage(ws, `sleeping... ${i}s elapsed (version=${WebSocketHibernationServer.version})`);
+			} catch (err) {
+				console.log("Failed to send over WebSocket:", err);
+				try { ws.close(1011, "internal error"); } catch {
+					return;
+				}
+			}
       console.log(`Sleeping... ${i}s elapsed (version=${WebSocketHibernationServer.version})`);
     }
 
     // Send current version after 30s
-    try {
-      ws.send(JSON.stringify({ version: WebSocketHibernationServer.version, echo: text }));
-    } catch (err) {
-      console.log("Failed to send over WebSocket:", err);
-      try { ws.close(1011, "internal error"); } catch {}
-    }
+		sendMessage(ws, `done sleeping (version=${WebSocketHibernationServer.version})`);
   }
 
   async webSocketClose(ws: WebSocket, code: number, reason: string, wasClean: boolean) {
