@@ -72,8 +72,8 @@ export class WebSocketHibernationServer extends DurableObject {
 
 		sendMessage(ws, `got message: ${text}`);
 
-    // Sleep 30s, logging every 5s
-    for (let i = 5; i <= 30; i += 5) {
+    // Sleep 60s, logging every 5s
+    for (let i = 5; i <= 60; i += 5) {
 			await this.sleep(5000);
 			try {
 				sendMessage(ws, `sleeping... ${i}s elapsed (version=${WebSocketHibernationServer.version})`);
