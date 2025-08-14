@@ -75,19 +75,13 @@ export class WebSocketHibernationServer extends DurableObject {
     // Sleep 60s, logging every 5s
     for (let i = 5; i <= 60; i += 5) {
 			await this.sleep(5000);
-			try {
-				sendMessage(ws, `sleeping... ${i}s elapsed (version=${WebSocketHibernationServer.version})`);
-			} catch (err) {
-				console.log("Failed to send over WebSocket:", err);
-				try { ws.close(1011, "internal error"); } catch {
-					return;
-				}
-			}
+			sendMessage(ws, `sleeping... ${i}s elapsed (version=${WebSocketHibernationServer.version})`);
       console.log(`Sleeping... ${i}s elapsed (version=${WebSocketHibernationServer.version})`);
     }
 
     // Send current version after 30s
 		sendMessage(ws, `done sleeping (version=${WebSocketHibernationServer.version})`);
+		console.log("end of webSocketMessage");
   }
 
   async webSocketClose(ws: WebSocket, code: number, reason: string, wasClean: boolean) {
