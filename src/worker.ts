@@ -38,7 +38,7 @@ export class WebSocketHibernationServer extends DurableObject {
 	constructor(ctx: DurableObjectState, env: Env) {
 		super(ctx, env);
 		if (typeof WebSocketHibernationServer.version !== 'number') {
-			WebSocketHibernationServer.version = 0;
+			WebSocketHibernationServer.version = 1;
 		}
 
 		// Reattach hibernated websockets
@@ -69,21 +69,30 @@ export class WebSocketHibernationServer extends DurableObject {
 
 	// Hibernation API handlers
 	async webSocketMessage(ws: WebSocket, message: ArrayBuffer | string) {
-		const text = typeof message === 'string' ? message : new TextDecoder().decode(message);
-		console.log(`DO received message: ${text}`);
+		let resolvePromise!: () => void;
+		const promise = new Promise<void>((res) => {
+			resolvePromise = res;
+		});
+		this.ctx.waitUntil(promise);
+		try {
+			const text = typeof message === 'string' ? message : new TextDecoder().decode(message);
+			console.log(`DO received message: ${text}`);
 
-		sendMessage(ws, `got message: ${text}`);
+			sendMessage(ws, `got message: ${text}`);
 
-		// Sleep 120s, logging every 5s
-		for (let i = 5; i <= 120; i += 5) {
-			await this.sleep(5000);
-			sendMessage(ws, `sleeping... ${i}s elapsed (version=${WebSocketHibernationServer.version})`);
-			console.log(`Sleeping... ${i}s elapsed (version=${WebSocketHibernationServer.version})`);
+			// Sleep 120s, logging every 5s
+			for (let i = 5; i <= 30; i += 5) {
+				await this.sleep(5000);
+				sendMessage(ws, `sleeping... ${i}s elapsed (version=${WebSocketHibernationServer.version})`);
+				console.log(`Sleeping... ${i}s elapsed (version=${WebSocketHibernationServer.version})`);
+			}
+
+			// Send current version after 30s
+			sendMessage(ws, `done sleeping (version=${WebSocketHibernationServer.version})`);
+		} finally {
+			resolvePromise();
+			console.log('end of webSocketMessage');
 		}
-
-		// Send current version after 30s
-		sendMessage(ws, `done sleeping (version=${WebSocketHibernationServer.version})`);
-		console.log('end of webSocketMessage');
 	}
 
 	async webSocketClose(ws: WebSocket, code: number, reason: string, wasClean: boolean) {
